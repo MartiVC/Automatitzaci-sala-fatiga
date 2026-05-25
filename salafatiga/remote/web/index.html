@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ca">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sala de fatiga — monitorització</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1 id="title">Sala de fatiga</h1>
+          <p class="subtitle">Monitorització de bombes centrífugues — consulta remota</p>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="conn-chips" id="conn-chips"></div>
+        <div class="health-pill" id="health-pill">
+          <span class="dot" id="health-dot"></span>
+          <span id="health-text">Connectant…</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="autorefresh" checked />
+          <span>Auto</span>
+        </label>
+        <button id="refresh-btn" type="button" class="btn">Actualitza</button>
+      </div>
+    </header>
+
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+
+    <main class="layout">
+      <!-- ───────────── PÀGINA: RESUM (vista infantil) ───────────── -->
+      <section id="page-overview" class="page" hidden>
+        <div class="overview-head">
+          <h2>Estat general de les bombes</h2>
+          <span class="muted" id="overview-time"></span>
+        </div>
+        <div class="pump-grid" id="pump-grid"></div>
+        <p class="overview-hint muted">Clica una bomba per veure'n el detall.</p>
+      </section>
+
+      <!-- ───────────── PÀGINA: EQUIP (detall) ──────────────────── -->
+      <section id="page-equip" class="page" hidden>
+      <!-- ── KPIs ───────────────────────────────────────────── -->
+      <section class="kpi-row">
+        <article class="kpi" id="kpi-state-card">
+          <span class="kpi-label">Estat global</span>
+          <strong class="kpi-value" id="kpi-state">—</strong>
+          <span class="kpi-detail" id="kpi-state-detail">—</span>
+        </article>
+        <article class="kpi">
+          <span class="kpi-label">Frescor de dades</span>
+          <strong class="kpi-value" id="kpi-fresh">—</strong>
+          <span class="kpi-detail" id="kpi-fresh-detail">—</span>
+        </article>
+        <article class="kpi">
+          <span class="kpi-label">Equips amb dades</span>
+          <strong class="kpi-value" id="kpi-equips">—</strong>
+          <span class="kpi-detail" id="kpi-equips-detail">—</span>
+        </article>
+        <article class="kpi">
+          <span class="kpi-label">Alarmes (24 h)</span>
+          <strong class="kpi-value" id="kpi-alarms">—</strong>
+          <span class="kpi-detail" id="kpi-alarms-detail">—</span>
+        </article>
+      </section>
+
+      <!-- ── Valors actuals de l'equip ───────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Valors actuals — <span id="metrics-equip" class="accent">—</span></h2>
+          <span class="muted" id="metrics-time"></span>
+        </div>
+        <div class="metric-grid" id="metric-grid"></div>
+      </section>
+
+      <!-- ── Tendència ───────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Tendència</h2>
+          <div class="chart-controls">
+            <div class="seg" id="range-seg" role="group" aria-label="Finestra temporal">
+              <button type="button" data-min="15" class="active">15 min</button>
+              <button type="button" data-min="60">1 h</button>
+              <button type="button" data-min="360">6 h</button>
+              <button type="button" data-min="1440">24 h</button>
+            </div>
+            <div class="seg" id="scale-seg" role="group" aria-label="Escala">
+              <button type="button" data-scale="real" class="active">Escala real</button>
+              <button type="button" data-scale="norm">Normalitzat</button>
+            </div>
+          </div>
+        </div>
+        <div class="series-picker" id="series-picker"></div>
+        <div class="chart-area">
+          <div id="chart" class="chart"></div>
+          <div id="chart-empty" class="chart-empty" hidden>Sense dades en aquest interval.</div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <!-- ── Esdeveniments ───────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Esdeveniments recents</h2>
+          <span class="muted" id="events-count"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Equip</th>
+                <th>Severitat</th>
+                <th>Tipus</th>
+                <th>Codi</th>
+                <th>Missatge</th>
+              </tr>
+            </thead>
+            <tbody id="events-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Detall (col·lapsable) ───────────────────────────── -->
+      <section class="panel">
+        <details id="raw-details">
+          <summary><h2>Detall de lectures</h2></summary>
+          <div class="raw-grid">
+            <div>
+              <h3>Últimes lectures de l'equip seleccionat</h3>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Variable</th><th>Origen</th><th>Valor</th><th>Qualitat</th><th>Raw</th><th>Hora</th><th>Nota</th>
+                    </tr>
+                  </thead>
+                  <tbody id="latest-body"></tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h3>Històric recent (totes les variables, tots els equips)</h3>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Hora</th><th>Equip</th><th>Variable</th><th>Origen</th><th>Valor</th><th>Qualitat</th>
+                    </tr>
+                  </thead>
+                  <tbody id="measurements-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+      </section><!-- /page-equip -->
+    </main>
+
+    <footer class="foot">
+      <span id="foot-text">PC LAB · sala de fatiga</span>
+    </footer>
+
+    <div id="tooltip" class="tooltip" hidden></div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

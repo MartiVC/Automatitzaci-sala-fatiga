@@ -1,0 +1,31 @@
+# ============================================================================
+#  Dependències — Automatització i monitorització de la sala de fatiga (PC LAB)
+#  Instal·lació:  python -m venv .venv  &&  .venv\Scripts\activate  &&  pip install -r requirements.txt
+# ============================================================================
+
+# --- Interfície gràfica local (PC LAB) ---
+PySide6>=6.6        # les gràfiques en viu es pinten amb QPainter (sense dependències addicionals)
+
+# --- Comunicació amb el variador SPEEDRIVE V2 (Modbus RTU sobre RS-485) ---
+pyserial>=3.5
+minimalmodbus>=2.1
+
+# --- Comunicació amb el PLC i simulador del PLC (Modbus TCP) ---
+pymodbus>=3.6
+
+# --- Configuració ---
+PyYAML>=6.0
+
+# --- Consulta remota / dashboard web (procés separat) ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+
+# --- Persistència corporativa (Oracle) ---
+# Driver oficial d'Oracle. Mode 'thin' per defecte (no requereix Oracle Client).
+oracledb>=2.0
+
+# --- Opcional: exportació a Parquet ---
+# pyarrow>=15.0
+
+# --- Desenvolupament / tests ---
+pytest>=8.0

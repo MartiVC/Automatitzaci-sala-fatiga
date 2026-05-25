@@ -1,0 +1,131 @@
+# ============================================================================
+#  Configuració del PC LAB — Automatització i monitorització de la sala de fatiga
+#
+#  Copia aquest fitxer a  config/config.yaml  i ajusta'l a la instal·lació real.
+#  (config.yaml no es versiona; config.example.yaml sí.)
+# ============================================================================
+
+app:
+  nom_installacio: "Sala de fatiga - Laboratori ESPA"
+  # Període de mostreig general per defecte (s). Cada font el pot sobreescriure.
+  poll_period_s: 1.0
+
+logging:
+  level: INFO              # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  dir: logs
+  max_bytes: 5000000       # mida màxima per fitxer de log abans de rotar
+  backup_count: 10         # nombre de fitxers de log antics a conservar
+
+# ---------------------------------------------------------------------------
+#  Variador SPEEDRIVE V2 — Modbus RTU sobre RS-485   (NOMÉS LECTURA)
+# ---------------------------------------------------------------------------
+variador:
+  enabled: true
+  mode: rtu                 # rtu = RS-485 real | sim_inproc = simulador local sense hardware
+  port: COM5               # Windows: COMx  |  Linux: /dev/ttyUSB0
+  slave_id: 1              # adreça de l'esclau Modbus (per defecte 1 al Speedrive)
+  baudrate: 9600           # protocol: 9600, N, 8, 1
+  parity: N                # N | E | O
+  bytesize: 8
+  stopbits: 1
+  timeout_s: 0.35
+  poll_period_s: 1.0
+  comm_lost_after: 3       # errors consecutius abans de marcar la comunicació "perduda"
+  # Equips presents al grup de pressió (adreça @0..@7 dins el grup).
+  # 'id' és l'identificador intern de l'equip dins l'aplicació.
+  equips:
+    - id: GRUP1_B1
+      addr: 0
+      descripcio: "Grup 1 - Multi 35 5N (2 HP, 230 V mono)"
+    - id: GRUP2_B1
+      addr: 1
+      descripcio: "Grup 2 - Multi 35 6N (3 HP, 400 V tri)"
+
+# ---------------------------------------------------------------------------
+#  PLC — Modbus TCP   (el PC LAB és client/màster; el PLC concentra els sensors)
+#  El simulador (run_plc_simulator.py) exposa aquest mateix esclau.
+# ---------------------------------------------------------------------------
+plc:
+  enabled: true
+  mode: tcp                # tcp = PLC real o simulador per xarxa
+                           # sim_inproc = simulador dins el mateix procés, sense xarxa (demo)
+  host: 127.0.0.1          # IP del PLC real, o 127.0.0.1 amb el simulador local
+  port: 5020
+  unit_id: 1
+  timeout_s: 1.0
+  poll_period_s: 1.0
+
+# ---------------------------------------------------------------------------
+#  Emmagatzematge històric (base de dades SQLite local)
+# ---------------------------------------------------------------------------
+storage:
+  db_path: data/historic.sqlite
+  flush_period_s: 5.0      # cada quants segons es bolquen les lectures acumulades
+  retention_days: 0        # purga automàtica de dades més antigues; 0 = desactivada
+
+# ---------------------------------------------------------------------------
+#  Exportació de dades
+# ---------------------------------------------------------------------------
+export:
+  dir: data/exports
+  default_format: csv      # csv | parquet
+
+# ---------------------------------------------------------------------------
+#  Consulta remota / dashboard web
+# ---------------------------------------------------------------------------
+web:
+  enabled: false
+  host: 0.0.0.0
+  port: 8000
+  # Quan la web va darrere del reverse proxy intern d'IT (subdomini + HTTPS),
+  # cal acceptar les capçaleres X-Forwarded-*. Llista d'IPs/CIDR del proxy
+  # autoritzades, o "*" per acceptar qualsevol (només si està en xarxa interna).
+  behind_proxy: false
+  forwarded_allow_ips: "127.0.0.1"
+
+# ---------------------------------------------------------------------------
+#  Interfície local
+# ---------------------------------------------------------------------------
+ui:
+  chart_window_s: 120          # finestra temporal de les gràfiques en viu (s)
+  equip_per_defecte: GRUP1_B1  # equip seleccionat a l'inici (un 'id' de variador.equips)
+
+# ---------------------------------------------------------------------------
+#  Oracle corporatiu (històric central)
+#
+#  El PC LAB escriu al SQLite local com a buffer i el servei 'sync' empeny
+#  periòdicament les noves files cap a Oracle. El dashboard FastAPI llegeix
+#  d'Oracle (i cau al SQLite local com a fallback si Oracle no respon).
+#
+#  La contrasenya es pot indicar com a "env:NOM_VARIABLE" o "${NOM_VARIABLE}"
+#  per llegir-la d'una variable d'entorn i no posar-la en clar al fitxer.
+# ---------------------------------------------------------------------------
+oracle:
+  enabled: false
+  # Opció A — connexió directa (sense wallet):
+  host: oracle.espa.local
+  port: 1521
+  service_name: ESPAPRD
+  user: SALAFATIGA
+  password: env:ORACLE_PASSWORD     # llegida de la variable d'entorn ORACLE_PASSWORD
+  # Opció B — connexió amb wallet d'Oracle (mTLS). Si s'indica wallet_dir,
+  # 'host'/'port'/'service_name' s'ignoren i 'dsn' ha de ser l'àlias TNS del
+  # tnsnames.ora del wallet.
+  # wallet_dir: C:\oracle\wallet_salafatiga
+  # wallet_password: env:ORACLE_WALLET_PASSWORD
+  # dsn: SALAFATIGA_HIGH
+  pool_min: 1
+  pool_max: 4
+  # Si False, IT ha desplegat l'esquema manualment i el PC LAB no intenta crear-lo.
+  auto_create_schema: true
+
+# ---------------------------------------------------------------------------
+#  Sincronització SQLite local → Oracle
+# ---------------------------------------------------------------------------
+sync:
+  enabled: false
+  push_period_s: 30.0          # cada quants segons s'empeny un lot a Oracle
+  batch_size: 1000             # mida del lot per inserció
+  backoff_max_s: 300.0         # màxim del backoff si Oracle no respon
+  retention_local_days: 7      # purga del buffer SQLite per a files JA sincronitzades
+  retention_check_period_s: 3600.0  # cada quants segons s'executa la purga

@@ -1,0 +1,26 @@
+# Dades i logs generats en execució
+/data/
+/logs/
+
+# Configuració local del PC LAB (es versiona només config.example.yaml)
+config/config.yaml
+config/config.local.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.pytest_tmp*/
+.mypy_cache/
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Editors / SO
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

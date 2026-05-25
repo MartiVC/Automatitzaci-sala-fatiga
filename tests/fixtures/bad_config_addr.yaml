@@ -1,0 +1,4 @@
+variador:
+  enabled: true
+  equips:
+    - {id: X, addr: 9}

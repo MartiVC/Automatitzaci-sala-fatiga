@@ -1,0 +1,40 @@
+QMainWindow {
+    background: #f5f6f8;
+}
+QTabWidget::pane {
+    border: 1px solid #c9ced6;
+    background: #ffffff;
+}
+QTableWidget {
+    background: #ffffff;
+    alternate-background-color: #f3f6fa;
+    gridline-color: #d9dee7;
+}
+QHeaderView::section {
+    background: #e9edf3;
+    color: #1f2937;
+    padding: 6px;
+    border: 0;
+    border-right: 1px solid #d0d6df;
+}
+QLabel#mutedLabel {
+    color: #5b6472;
+}
+QLabel[state="ok"] {
+    background: #d9f3e2;
+    color: #14532d;
+    border: 1px solid #92d6a8;
+    padding: 4px 8px;
+}
+QLabel[state="lost"], QLabel[state="error"] {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #fca5a5;
+    padding: 4px 8px;
+}
+QLabel[state="disabled"], QLabel[state="disconnected"] {
+    background: #eef0f3;
+    color: #4b5563;
+    border: 1px solid #cfd5df;
+    padding: 4px 8px;
+}
